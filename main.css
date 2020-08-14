@@ -34,3 +34,10 @@ ul {
 #submit:disabled {
     background-color: #cccccc;
 }
+
+#mealsList li{
+    cursor: pointer;
+}
+.selected {
+    background-color: #dddddd;
+}
