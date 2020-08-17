@@ -24,7 +24,7 @@ const renderOrder = (order, meals) => {
     return element
 }
 
-window.onload = () => {
+const initializeForm = () => {
     const orderForm = document.getElementById('order')
     orderForm.onsubmit = (e) => {
         e.preventDefault()
@@ -56,7 +56,9 @@ window.onload = () => {
                 submit.removeAttribute('disabled')
             })
     }
+}
 
+const initializeData = () => {
     fetch('https://almuerzi.facuj.vercel.app/api/meals')
         .then(response => response.json())
         .then(data => {
@@ -77,4 +79,9 @@ window.onload = () => {
                 })
 
         })
+}
+
+window.onload = () => {
+    initializeForm()
+    initializeData()
 }
