@@ -1,4 +1,6 @@
 let mealsState = []
+let user = {}
+let currentRoute = 'login' //login, registeer, orders
 
 const stringToHTML = (s) => {
     const parser = new DOMParser()
@@ -26,6 +28,7 @@ const renderOrder = (order, meals) => {
 
 const initializeForm = () => {
     const orderForm = document.getElementById('order')
+    const token = localStorage.getItem('token')
     orderForm.onsubmit = (e) => {
         e.preventDefault()
         const submit = document.getElementById('submit')
@@ -34,18 +37,20 @@ const initializeForm = () => {
         const mealIdValue = mealId.value
         if (!mealIdValue) {
             alert('Debe seleccionar algún plato')
+            submit.removeAttribute('disabled')
             return
         }
 
         const order = {
             meal_id: mealIdValue,
-            user_id: 'idDeFacu'
+            user_id: user._id
         }
 
-        fetch('https://almuerzi.facuj.vercel.app/api/orders', {
+        fetch('https://serverless.facuj.vercel.app/api/orders', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                authorization: token,
             },
             body: JSON.stringify(order)
         }).then(x => x.json())
@@ -59,7 +64,7 @@ const initializeForm = () => {
 }
 
 const initializeData = () => {
-    fetch('https://almuerzi.facuj.vercel.app/api/meals')
+    fetch('https://serverless.facuj.vercel.app/api/meals')
         .then(response => response.json())
         .then(data => {
             mealsState = data
@@ -69,7 +74,7 @@ const initializeData = () => {
             mealsList.removeChild(mealsList.firstElementChild)
             listItems.forEach(element => mealsList.appendChild(element))
             submit.removeAttribute('disabled')
-            fetch('https://almuerzi.facuj.vercel.app/api/orders')
+            fetch('https://serverless.facuj.vercel.app/api/orders')
                 .then(response => response.json())
                 .then(ordersData => {
                     const ordersList = document.getElementById('ordersList')
@@ -81,7 +86,62 @@ const initializeData = () => {
         })
 }
 
-window.onload = () => {
+const renderApp = () => {
+    const token = localStorage.getItem('token')
+    if (token) {
+        user = JSON.parse(localStorage.getItem('user'))
+        return renderOrders()
+    }
+    renderLogin()
+}
+
+const renderOrders = () => {
+    const ordersView = document.getElementById('orders-view')
+    document.getElementById('app').innerHTML = ordersView.innerHTML
     initializeForm()
     initializeData()
+}
+
+const renderLogin = () => {
+    const loginTemplate = document.getElementById('login-template')
+    document.getElementById('app').innerHTML = loginTemplate.innerHTML
+
+    const loginForm = document.getElementById('login-form')
+    loginForm.onsubmit = (e) => {
+        e.preventDefault()
+        const email = document.getElementById('email').value
+        const password = document.getElementById('password').value
+        fetch('https://serverless.facuj.vercel.app/api/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password })
+        }).then(x => x.json())
+            .then(respuesta => {
+                localStorage.setItem('token', respuesta.token)
+                currentRoute = 'orders'
+                return respuesta.token
+            })
+            .then(token => {
+                return fetch('https://serverless.facuj.vercel.app/api/auth/me', {
+                    method: 'GET',
+                    headers: {
+                        'Content-type': 'application/json',
+                        authorization: token,
+                    },
+                })
+            })
+            .then(x => x.json())
+            .then(fetchedUser => {
+                localStorage.setItem('user', JSON.stringify(fetchedUser))
+                user = fetchedUser
+                renderOrders()
+            })
+    }
+
+}
+
+window.onload = () => {
+    renderApp()
 }
